@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Quiz App</title>
+    
+    <style>
+        /* Task 3: Styling with CSS */
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f5f5;
+            --text-color: #333;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2f3; /* Background color [cite: 32] */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Card-style quiz container  */
+        .quiz-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        #question-area {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        #question-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        /* MCQ Options Styling [cite: 33] */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background-color: var(--secondary-color);
+            border: 2px solid transparent;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s ease;
+        }
+
+        .option-btn:hover {
+            background-color: #ddd; /* Hover effect [cite: 33] */
+        }
+
+        .option-btn.selected {
+            border-color: var(--primary-color);
+            background-color: #d1e3fa;
+        }
+
+        /* Layout and alignment [cite: 31] */
+        .controls {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .primary-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .primary-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #result-section {
+            display: none; /* Hidden initially [cite: 27] */
+        }
+
+        .progress {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <header>
+            <h1 id="quiz-title">General Knowledge Quiz</h1>
+        </header>
+
+        <section id="quiz-section">
+            <div id="question-area">
+                <p id="progress-indicator" class="progress">Question 1 of 5</p> <p id="question-text">Loading question...</p>
+                <div id="options-container" class="options-container">
+                    </div>
+            </div>
+
+            <div class="controls">
+                <button id="next-btn" class="primary-btn" disabled>Next Question</button> </div>
+        </section>
+
+        <section id="result-section">
+            <h2>Quiz Completed!</h2>
+            <p id="final-score">You scored 0 out of 5</p>
+            <button id="restart-btn" class="primary-btn">Restart Quiz</button> </section>
+    </div>
+
+    <script>
+        /* Task 4: JavaScript Functionality */
+        
+        // Store 5 multiple choice questions (Array of Objects) 
+        const quizData = [
+            {
+                question: "What does HTML stand for?",
+                options: ["Hyper Text Markup Language", "High Tech Modern Language", "Hyperlink and Text Management", "Home Tool Markup Language"],
+                correct: 0
+            },
+            {
+                question: "Which language is used for web styling?",
+                options: ["Python", "PHP", "CSS", "C++"],
+                correct: 2
+            },
+            {
+                question: "Which of these is a JavaScript Framework?",
+                options: ["Django", "React", "Flask", "Laravel"],
+                correct: 1
+            },
+            {
+                question: "What is the correct way to write a comment in CSS?",
+                options: ["// comment", "/* comment */", "", "# comment"],
+                correct: 1
+            },
+            {
+                question: "Which tag is used to create a hyperlink?",
+                options: ["<link>", "<a>", "<href>", "<url>"],
+                correct: 1
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedAnswer = null;
+
+        // Elements
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const nextBtn = document.getElementById('next-btn');
+        const progressText = document.getElementById('progress-indicator');
+        const quizSection = document.getElementById('quiz-section');
+        const resultSection = document.getElementById('result-section');
+        const finalScoreText = document.getElementById('final-score');
+        const restartBtn = document.getElementById('restart-btn');
+
+        // Load question one at a time [cite: 39]
+        function loadQuestion() {
+            selectedAnswer = null;
+            nextBtn.disabled = true; // Prevent moving without selection 
+            
+            const currentData = quizData[currentQuestionIndex];
+            questionText.innerText = currentData.question;
+            progressText.innerText = `Question ${currentQuestionIndex + 1} of ${quizData.length}`; // Progress 
+
+            optionsContainer.innerHTML = '';
+            currentData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.classList.add('option-btn');
+                button.onclick = () => selectOption(index, button);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        // Allow user to select only one option [cite: 40]
+        function selectOption(index, button) {
+            selectedAnswer = index;
+            
+            // Remove 'selected' class from all buttons
+            document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+            // Add 'selected' class to the clicked button
+            button.classList.add('selected');
+            
+            nextBtn.disabled = false; // Enable next button once an option is picked
+        }
+
+        // On clicking 'Next' [cite: 42]
+        nextBtn.onclick = () => {
+            // Record/Save selected answer & check score [cite: 41, 43]
+            if (selectedAnswer === quizData[currentQuestionIndex].correct) {
+                score++;
+            }
+
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion(); // Load the next question [cite: 44]
+            } else {
+                showResult(); // After last question [cite: 45]
+            }
+        };
+
+        // Display final score [cite: 47]
+        function showResult() {
+            quizSection.classList.add('hidden');
+            resultSection.style.display = 'block';
+            finalScoreText.innerText = `You scored ${score} out of ${quizData.length}`; // Calculate marks [cite: 46]
+        }
+
+        // Restart functionality 
+        restartBtn.onclick = () => {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultSection.style.display = 'none';
+            quizSection.classList.remove('hidden');
+            loadQuestion();
+        };
+
+        // Initial call
+        loadQuestion();
+    </script>
+</body>
+</html>
